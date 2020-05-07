@@ -164,9 +164,10 @@ con.query('SELECT * FROM tbl_accounts', function(err,rows,fields) {
 
   
     }
-    ret_Obj = {"userList":accountArray};
-    res_obj = {res:ret_Obj};
-    res.send(res_obj);
+	con.end();
+	ret_Obj = {"userList":accountArray};
+	res_obj = {res:ret_Obj};
+	res.send(res_obj);
   }
 });
 
