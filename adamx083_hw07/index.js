@@ -204,9 +204,11 @@ con.connect(function(err) {
 con.query('SELECT * FROM tbl_contacts', function(err,rows,fields) {
   if (err) throw err;
   if (rows.length == 0){
-    returnObj = {"contacts":[]}
-    responseObj = {res:returnObj};
-    res.send(returnObj);
+	con.end();
+	returnObj = {"contacts":[]};
+	responseObj = {res:returnObj};
+	res.send(returnObj);
+	  
   }else {
     contactArray = [];
     for (var i = 0 ; i < rows.length; i++){
@@ -218,9 +220,10 @@ con.query('SELECT * FROM tbl_contacts', function(err,rows,fields) {
                           "favouritePlaceURL":rows[i].contact_favoriteplaceurl});
 
     }
-    returnObj = {"contacts":contactArray};
-    responseObj = {res:returnObj};
-    res.send(returnObj);
+	con.end();
+	returnObj = {"contacts":contactArray};
+	responseObj = {res:returnObj};
+	res.send(returnObj);
   }
 });
 
@@ -261,11 +264,13 @@ app.post('/addUser', function(req, res) {
             }
             console.log("Value inserted");
           });
-
-          ret = {flag:true};
-          console.log(ret);
-          res.send(ret);
+	    
+	con.end();
+	ret = {flag:true};
+	console.log(ret);
+	res.send(ret);
     }else{
+	con.end();
       ret = {flag:false};
       console.log("cannot insert");
       res.send(ret);
@@ -303,9 +308,9 @@ app.post('/deleteUser', function(req, res) {
               console.log("Value delete");
             });
         });
-
-    ret_obj = {flag : true};
-    res.send(ret_obj);
+	con.end();
+	ret_obj = {flag : true};
+	res.send(ret_obj);
   }
 });
 
@@ -343,11 +348,12 @@ app.post('/updateUser', function(req, res) {
                         console.log("UPDATE Complete");
                       });
                   ret = {flag:true};
-                  console.log(ret);
+             	  con.end();
                   res.send(ret);
               }else{
+		   
                   ret = {flag:false};
-                  console.log("Cannot UPDATE");
+                  con.end();
                   res.send(ret);
               }
 
@@ -399,8 +405,8 @@ app.post('/postContact', function(req, res) {
         console.log("Value inserted");
       });
   });
-
-    res.redirect("/contact");
+	con.end();
+	res.redirect("/contact");
 });
 
 // POST method to validate user login
@@ -430,14 +436,15 @@ app.post('/sendLoginDetails', function(req, res) {
   con.query('SELECT * FROM tbl_accounts Where acc_password = ? and acc_name = ?',[hashedPassword,userID],function(err,rows,fields) {
   if (err) throw err;
   if (rows.length == 0){
-    req.session.flag = 1
-    res.redirect("/login");}
+	req.session.flag = 1
+	con.end();
+	res.redirect("/login");}
 
   else {
-    
-      req.session.value = 1;
-      req.session.user = userID;
-      res.redirect("/contact");
+    	con.end();
+	req.session.value = 1;
+	req.session.user = userID;
+	res.redirect("/contact");
      }
   });
 
