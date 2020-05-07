@@ -1,0 +1,140 @@
+﻿<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style type="text/css">
+      .navbar {
+        background-color: #563d7c;
+      }
+      .navbar-default .navbar-nav li a{
+        color: #eee;
+      }
+      .navbar-default .navbar-nav li a:hover{
+        color: white;
+      }
+      th, td{
+        text-align: center;
+      }
+      thead {
+        background-color: #e57373;
+    color: white;
+      }
+
+       p {
+          display: block;
+          color: white;
+          text-align: center;
+          padding: 10px;
+          text-decoration: underline;
+          float: right;
+          font-weight: bold;
+      }
+
+    </style>
+  </head>
+  <body>
+          <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <ul class="nav navbar-nav">
+              <li><a href="/"><b>Home</b></a></li>
+              <li><a href="/contact"><b>Contact</b></a></li>
+              <li><a href="/addContact"><b>Add Contact</b></a></li>
+              <li><a href="/stock"><b>Stock Page</b></a></li>
+              <li><a href="/admin"><b>Admin</b></a></li>
+              <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span></a></li>
+
+          </ul>
+              <p id="userName">Welcome</p>
+        </div>
+    </nav>
+
+      <br><br>
+      <div class="container">
+          <table class="table" id="contactTable">
+              <thead>
+                  <tr>
+                      <th scope="col">Name</th>
+                      <th scope="col">Email</th>
+                      <th scope="col">Address</th>
+                      <th scope="col">Phone Number</th>
+                      <th scope="col">Favorite Place</th>
+                  </tr>
+              </thead>
+              <tbody></tbody>
+          </table>
+      </div>
+      <script type="text/javascript">
+      // TODO: Fetch contact.json data from the server and display it in the contactTable
+
+        
+        var xmlhttp1 = new XMLHttpRequest();
+        var url1 = "/userLogin";
+
+
+        xmlhttp1.onreadystatechange = function() {
+            console.log(xmlhttp1.readyState)
+            if (xmlhttp1.readyState == 4 && xmlhttp1.status == 200) {
+                var user = xmlhttp1.responseText;
+                console.log(user);
+                show_user(user);
+            }
+        }
+        xmlhttp1.open("GET", url1, true);
+        xmlhttp1.send();
+
+    
+    function show_user(user) {
+        var x = document.getElementById("userName");
+        new_text = x.innerHTML + " " + user;
+
+        if (user) {
+            x.innerHTML = new_text;
+        }
+        }
+
+      var xmlhttp = new XMLHttpRequest();
+      var url = '/getListOfContacts';
+
+      xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+              var Contact_List = xmlhttp.responseText;
+              // console.log(Contact_List)
+              myFunction(Contact_List);
+          }
+      }
+
+      xmlhttp.open("GET", url, true);
+      xmlhttp.send();
+
+      function myFunction(Clist) {
+          var out = "";
+          var obj = JSON.parse(Clist);
+          // console.log(obj)
+          var len = Object.keys(obj.contacts).length;
+          var i;
+          var table = document.getElementById("contactTable");
+
+          var tbody = document.getElementsByTagName("tbody")[0];
+          for(i = 0; i < len; i++) {
+              var newRow = tbody.insertRow(i);
+              var nameCell = newRow.insertCell(0);
+              var emailCell = newRow.insertCell(1);
+              var addressCell = newRow.insertCell(2);
+              var phoneCell = newRow.insertCell(3);
+              var favCell = newRow.insertCell(4);
+              
+
+              nameCell.innerText = obj.contacts[i].name;
+              emailCell.innerText = obj.contacts[i].email;
+              addressCell.innerText = obj.contacts[i].address;
+              phoneCell.innerText = obj.contacts[i].phoneNumber;
+              favCell_data = '<a href="' + obj.contacts[i].favouritePlaceURL +'">'+ obj.contacts[i].favouritePlace + ' </a>';
+              favCell.innerHTML = favCell_data;
+          }
+      }
+      </script>
+  </body>
+</html>
