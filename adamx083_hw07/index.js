@@ -30,7 +30,7 @@ var xml2js = require('xml2js');
 
 var parser = new xml2js.Parser();
 var DBinfo;
-
+var pool;
 // use express-session
 // in mremory session is sufficient for this assignment
 app.use(session({
@@ -44,11 +44,26 @@ fs.readFile(__dirname + '/dbconfig-1.xml', function(err, data) {
     parser.parseString(data, function (err, result) {
     if (err) throw err;
     DBinfo = result;
+    console.log("DBinfo");
+    console.log(DBinfo);
+    pool = mysql.createPool({ 
+    connectionLimit: 100,
+    host: DBinfo.dbconfig.host[0],
+    user: DBinfo.dbconfig.user[0], 
+    password: DBinfo.dbconfig.password[0], 
+    database: DBinfo.dbconfig.database[0], 
+    port: DBinfo.dbconfig.port[0]
+  });
   });
   });
 
+
 // server listens on port 9007 for incoming connections
 app.listen(process.env.PORT || 9001, () => console.log('Listening on port 9001!'));
+
+
+
+
 
 app.get('/',function(req, res) {
 
@@ -131,51 +146,30 @@ app.get('/login',function(req, res) {
 });
 app.get('/getUsers', function(req, res) {
   
-  var con = mysql.createConnection({
-  host: DBinfo.dbconfig.host[0],
-  user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-  password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-  database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-  port: DBinfo.dbconfig.port[0]
+  pool.getConnection(function(err, con){  
+    con.query('SELECT * FROM tbl_accounts', function(err,rows,fields) {
+
+      if (err) throw err;
+      if (rows.length == 0){
+        returnObj = {"contacts":[]}
+        responseObj = {res:returnObj};
+        res.send(returnObj);
+      }else {
+        accountArray = [];
+        for (var i = 0 ; i < rows.length; i++){
+          accountArray.push({"name":rows[i].acc_name,
+                              "id":rows[i].acc_id,
+                              "login":rows[i].acc_login});
+      
+        }
+        ret_Obj = {"userList":accountArray};
+        res_obj = {res:ret_Obj};
+        res.send(res_obj);
+      }
+      });
+    con.release();
+    });
 });
-
-con.connect(function(err) {
-  if (err) {
-    throw err;
-  };
-   console.log("Connected to MYSQL database!");
-});
-
-
-con.query('SELECT * FROM tbl_accounts', function(err,rows,fields) {
-
-  if (err) throw err;
-  if (rows.length == 0){
-    returnObj = {"contacts":[]}
-    responseObj = {res:returnObj};
-    res.send(returnObj);
-  }else {
-    accountArray = [];
-    for (var i = 0 ; i < rows.length; i++){
-      accountArray.push({"name":rows[i].acc_name,
-                          "id":rows[i].acc_id,
-                          "login":rows[i].acc_login});
-
-
-  
-    }
-	con.end();
-	ret_Obj = {"userList":accountArray};
-	res_obj = {res:ret_Obj};
-	res.send(res_obj);
-  }
-});
-
-
-
-});
-
-
 
 
 
@@ -185,110 +179,74 @@ con.query('SELECT * FROM tbl_accounts', function(err,rows,fields) {
 // GET method to return the list of contacts
 // The function queries the tbl_contacts table for the list of contacts and sends the response back to client
 app.get('/getListOfContacts', function(req, res) {
+  pool.getConnection(function(err, connection){  
 
-  var con = mysql.createConnection({
-  host: DBinfo.dbconfig.host[0],
-  user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-  password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-  database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-  port: DBinfo.dbconfig.port[0]
-});
+      connection.query('SELECT * FROM tbl_contacts', function(err,rows,fields) {
+        if (err) throw err;
+        if (rows.length == 0){
+          returnObj = {"contacts":[]}
+          responseObj = {res:returnObj};
+          res.send(returnObj);
+        }else {
+          contactArray = [];
+          for (var i = 0 ; i < rows.length; i++){
+            contactArray.push({"name":rows[i].contact_name,
+                                "email":rows[i].contact_email,
+                                "address": rows[i].contact_address,
+                                "phoneNumber":rows[i].contact_phone,
+                                "favouritePlace":rows[i].contact_favoriteplace,
+                                "favouritePlaceURL":rows[i].contact_favoriteplaceurl});
 
-con.connect(function(err) {
-  if (err) {
-    throw err;
-  };
-   console.log("Connected to MYSQL database!");
-});
-
-
-con.query('SELECT * FROM tbl_contacts', function(err,rows,fields) {
-  if (err) throw err;
-  if (rows.length == 0){
-	con.end();
-	returnObj = {"contacts":[]};
-	responseObj = {res:returnObj};
-	res.send(returnObj);
-	  
-  }else {
-    contactArray = [];
-    for (var i = 0 ; i < rows.length; i++){
-      contactArray.push({"name":rows[i].contact_name,
-                          "email":rows[i].contact_email,
-                          "address": rows[i].contact_address,
-                          "phoneNumber":rows[i].contact_phone,
-                          "favouritePlace":rows[i].contact_favoriteplace,
-                          "favouritePlaceURL":rows[i].contact_favoriteplaceurl});
-
-    }
-	con.end();
-	returnObj = {"contacts":contactArray};
-	responseObj = {res:returnObj};
-	res.send(returnObj);
-  }
-});
-
-
+          }
+          returnObj = {"contacts":contactArray};
+          responseObj = {res:returnObj};
+          res.send(returnObj);
+        }
+      });
+      connection.release();
+  });
+  
 
 });
 
 app.post('/addUser', function(req, res) {
 
-    var con = mysql.createConnection({
-    host: DBinfo.dbconfig.host[0],
-    user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-    password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-    database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-    port: DBinfo.dbconfig.port[0]
-    });
-
-    con.connect(function(err) {
-      if (err) {
-        throw err;
-      };
+    pool.getConnection(function(err, con){  
 
     var login = req.body.login
     con.query('SELECT * FROM tbl_accounts WHERE acc_login = ?',login, function(err,rows,result) {
 
-    if (err) throw err;
-    if (rows.length == 0){
-          
-          var rowToBeInserted = {
-            acc_name: req.body.name,
-            acc_login: req.body.login,
-            acc_password: crypto.createHash('sha256').update(req.body.password).digest('base64')
-          };
-          var sql = ``;
-          con.query('INSERT tbl_accounts SET ?', rowToBeInserted, function(err, result) {
-            if(err) {
-              throw err;
-            }
-            console.log("Value inserted");
-          });
-	    
-	con.end();
-	ret = {flag:true};
-	console.log(ret);
-	res.send(ret);
-    }else{
-	con.end();
-      ret = {flag:false};
-      console.log("cannot insert");
-      res.send(ret);
-    }
-    });
+      if (err) throw err;
+      if (rows.length == 0){
+            
+            var rowToBeInserted = {
+              acc_name: req.body.name,
+              acc_login: req.body.login,
+              acc_password: crypto.createHash('sha256').update(req.body.password).digest('base64')
+            };
+            var sql = ``;
+            con.query('INSERT tbl_accounts SET ?', rowToBeInserted, function(err, result) {
+              if(err) {
+                throw err;
+              }
+              console.log("Value inserted");
+            });
+
+            ret = {flag:true};
+            console.log(ret);
+            res.send(ret);
+      }else{
+        ret = {flag:false};
+        console.log("cannot insert");
+        res.send(ret);
+      }
+      });
+    con.release();
   });
 });
 
 app.post('/deleteUser', function(req, res) {
 
-  var con = mysql.createConnection({
-  host: DBinfo.dbconfig.host[0],
-  user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-  password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-  database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-  port: DBinfo.dbconfig.port[0]
-  });
     if (req.body.login == req.session.user){
 
         ret_obj = {flag : false};
@@ -296,11 +254,7 @@ app.post('/deleteUser', function(req, res) {
         res.send(ret_obj);
       }
       else{
-          con.connect(function(err) {
-            if (err) {
-              throw err;
-            };
-            console.log("Connected!");
+          pool.getConnection(function(err, con){  
           
             con.query('DELETE FROM tbl_accounts WHERE acc_login = ?', req.body.login , function(err, result) {
               if(err) {
@@ -308,29 +262,17 @@ app.post('/deleteUser', function(req, res) {
               }
               console.log("Value delete");
             });
+            con.release();
         });
-	con.end();
-	ret_obj = {flag : true};
-	res.send(ret_obj);
+
+    ret_obj = {flag : true};
+    res.send(ret_obj);
   }
 });
 
 app.post('/updateUser', function(req, res) {
 
-    var con = mysql.createConnection({
-    host: DBinfo.dbconfig.host[0],
-    user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-    password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-    database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-    port: DBinfo.dbconfig.port[0]
-    });
-
-    con.connect(function(err) {
-            if (err) {
-              throw err;
-            };
-            console.log("Connected!");
-          
+    pool.getConnection(function(err, con){  
             var id = req.body.id;
             var name = req.body.name;
             var login = req.body.login;
@@ -348,13 +290,13 @@ app.post('/updateUser', function(req, res) {
                         }
                         console.log("UPDATE Complete");
                       });
+                  con.release();
                   ret = {flag:true};
-             	  con.end();
+                  console.log(ret);
                   res.send(ret);
               }else{
-		   
                   ret = {flag:false};
-                  con.end();
+                  console.log("Cannot UPDATE");
                   res.send(ret);
               }
 
@@ -375,19 +317,7 @@ app.post('/updateUser', function(req, res) {
 // POST method to insert details of a new contact to tbl_contacts table
 app.post('/postContact', function(req, res) {
 
-    var con = mysql.createConnection({
-    host: DBinfo.dbconfig.host[0],
-    user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-    password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-    database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-    port: DBinfo.dbconfig.port[0]
-  });
-
-    con.connect(function(err) {
-      if (err) {
-        throw err;
-      };
-      console.log("Connected!");
+  pool.getConnection(function(err, con){  
 ////////////////////////////////////////////////////////////
       var rowToBeInserted = {
         contact_name: req.body.contactName, 
@@ -405,50 +335,38 @@ app.post('/postContact', function(req, res) {
         }
         console.log("Value inserted");
       });
+      con.release();
   });
-	con.end();
-	res.redirect("/contact");
+
+    res.redirect("/contact");
 });
 
 // POST method to validate user login
 // upon successful login, user session is created
 app.post('/sendLoginDetails', function(req, res) {
-  //Add Details
-  var con = mysql.createConnection({
-  host: DBinfo.dbconfig.host[0],
-  user: DBinfo.dbconfig.user[0], // replace with the database user provided to you
-  password: DBinfo.dbconfig.password[0], // replace with the database password provided to you
-  database: DBinfo.dbconfig.database[0], // replace with the database user provided to you
-  port: DBinfo.dbconfig.port[0]
+  
+  pool.getConnection(function(err, con){  
+    userID = req.body.username;
+    password = req.body.password;
+
+
+    hashedPassword = crypto.createHash('sha256').update(password).digest('base64')
+
+    con.query('SELECT * FROM tbl_accounts Where acc_password = ? and acc_name = ?',[hashedPassword,userID],function(err,rows,fields) {
+    if (err) throw err;
+    if (rows.length == 0){
+      req.session.flag = 1
+      res.redirect("/login");}
+
+    else {
+      
+        req.session.value = 1;
+        req.session.user = userID;
+        res.redirect("/contact");
+       }
+    });
+    con.release();
   });
-
-  con.connect(function(err) {
-    if (err) {
-     throw err;
-   };
-  });
-
-  userID = req.body.username;
-  password = req.body.password;
-
-
-  hashedPassword = crypto.createHash('sha256').update(password).digest('base64')
-
-  con.query('SELECT * FROM tbl_accounts Where acc_password = ? and acc_name = ?',[hashedPassword,userID],function(err,rows,fields) {
-  if (err) throw err;
-  if (rows.length == 0){
-	req.session.flag = 1
-	con.end();
-	res.redirect("/login");}
-
-  else {
-    	con.end();
-	req.session.value = 1;
-	req.session.user = userID;
-	res.redirect("/contact");
-     }
-  });
-
 });
 
 app.get('/getflag',function(req,res) {
