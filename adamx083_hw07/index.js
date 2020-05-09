@@ -278,7 +278,7 @@ app.post('/updateUser', function(req, res) {
             var login = req.body.login;
             var password = crypto.createHash('sha256').update(req.body.password).digest('base64');
 
-                con.query('SELECT * FROM tbl_accounts WHERE acc_id = ?',id, function(err,rows,result) {
+                con.query('SELECT * FROM tbl_accounts WHERE acc_login = ? AND acc_id != ?',[login,id], function(err,rows,result) {
 
                 if (err) throw err;
                 if (rows.length == 0){
